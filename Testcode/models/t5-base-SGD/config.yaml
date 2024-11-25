@@ -1,0 +1,47 @@
+---
+# Meta Info
+  ModelName: "t5-base-SGD"
+  Note: "T5-base for SGD, using naive linearization"
+
+# LightningModule
+  LightningModuleName: "HFT5GenerationModel"
+  LightningModuleParas:
+    model_path: "t5-base"
+
+# LightningDataModule
+  LightningDataModuleName: "GEMSGD_DataModule"
+  LightningDataModuleParas:
+    batch_size: 2
+    tokenizer_path: t5-base
+    tokenizer_class: T5Tokenizer
+    force_process: true
+    save_cache: false
+    encode_args:
+      padding: max_length
+      truncation: true
+    linearizer_class: SGD_NaiveLinearizer
+
+# Training
+  TrainerParas:
+    accumulate_grad_batches: 4
+    max_epochs: 3
+    val_check_interval: 40000
+  CheckpointStepInterval: 40000
+  auto_lr_find: True
+
+# Logging
+  TrainLoggerName: TensorBoardLogger
+  TrainLoggerParas:
+    name: naive-linear
+    version: train-test
+
+  TestLoggerName: CSVLogger
+  TestLoggerParas:
+    name: naive-linear
+    version: test-1-23122
+
+# Testing
+  LoadingParas:
+    checkpoint_path: ""
+    save_decode: True
+    decode_path: ""

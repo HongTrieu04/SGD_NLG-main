@@ -1,0 +1,69 @@
+---
+# Meta Info
+  ModelName: &model_name "t5-small-SGD"
+  Note: "T5-small for SGD"
+
+# LightningModule
+  LightningModuleName: "HFT5GenerationModel"
+  LightningModuleParas:
+    model_path: "t5-small" # assuming root-dir under models/<model_name>
+    optimizer: Adafactor
+    optimizer_params:
+      lr: 0.001
+      scale_parameter: false
+      relative_step: false
+      warmup_init: false
+    tokenizer_path: t5-small
+
+
+# LightningDataModule
+  LightningDataModuleName: "GEMSGD_DataModule"
+  LightningDataModuleParas:
+    batch_size: 8
+    tokenizer_path: "t5-small"
+    tokenizer_class: T5Tokenizer
+    force_process: false
+    save_cache: true
+    encode_args:
+      padding: max_length
+      truncation: true
+    linearizer_class: SGD_SchemaGuidedLinearizer
+    schema_paths:
+      - data/schemas/schema-train.json
+      - data/schemas/schema-test.json
+      - data/schemas/schema-dev.json
+    template_dir: data/utterance_templates
+
+# Training
+  TrainerParas:
+    accumulate_grad_batches: 32
+    max_epochs: 8
+    val_check_interval: 10000
+
+
+  ModelCheckpointParas:
+    monitor: 'val_loss'
+
+# Logging
+  TrainLoggerName: TensorBoardLogger
+  TrainLoggerParas:
+    name: schema-guided
+    version: train-batch256-adafactor
+
+  TestLoggerName: CSVLogger
+  TestLoggerParas:
+    name: schema-guided 
+    version: test-batch256-adafactor+beam+max_length
+
+# Testing
+  LoadingParas:
+    checkpoint_path: "logs/schema-guided/train-batch256-adafactor/checkpoints/epoch=7-step=5139.ckpt"
+    save_decode: True
+    decode_path: logs/schema-guided/test-batch256-adafactor+beam+max_length
+    generate_params:
+      num_beams: 4
+      length_penalty: 0.6
+      max_length: 100
+  
+  Temp: *model_name
+

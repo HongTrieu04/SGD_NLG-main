@@ -1,0 +1,77 @@
+---
+# Meta Info
+  ModelName: "gpt2-SGD"
+  ExpName: &exp_name "gpt2-paper-adamw-b8"
+  VerName: &ver_name "paper-adamw-allmodel"
+  WandbProject: &wandb_project bbyrne-nlg
+  Note: "gpt2 for SGD, using naive linearization"
+
+# Tokenizer
+  TokenizerInfo:
+    tokenizer_class: GPT2TokenizerFast
+    tokenizer_name: &tk_name gpt2
+    tokenizer_alias: &tk_alias GPT2TokenizerFast
+
+# LightningModule
+  LightningModuleName: GPT2GenerationModel
+  LightningModuleParas:
+    model_class: GPT2LMHeadModel
+    model_path: gpt2
+    optimizer: AdamW
+    optimizer_params:
+      lr: 0.00005
+    
+# LightningDataModule
+  LightningDataModuleName: "GEMSGD_GPT2DataModule"
+  LightningDataModuleParas:
+    batch_size: 8
+    tokenizer_name: *tk_alias
+    force_process: false
+    save_cache: true
+    encode_args:
+      padding: longest
+      truncation: true
+    linearizer_class: SGD_PaperNaiveLinearizer
+    schema_paths:
+      - data/schemas/schema-train.json
+      - data/schemas/schema-test.json
+      - data/schemas/schema-dev.json
+    template_dir: data/utterance_templates
+
+# Training
+  TrainerParas:
+    # accumulate_grad_batches: 32
+    max_epochs: 5
+    val_check_interval: 10000
+  
+  ModelCheckpointParas:
+    monitor: 'val_loss'
+    save_top_k: -1
+
+#Logging
+  TrainLoggerName: WandbLogger
+  TrainLoggerParas:
+    project: *wandb_project
+    name: *exp_name
+    version: *ver_name
+
+  # TrainLoggerName: TensorBoardLogger
+  # TrainLoggerParas:
+  #   name: *exp_name
+  #   version: *ver_name
+
+  TestLoggerName: CSVLogger
+  TestLoggerParas:
+    name: *exp_name
+    version: *ver_name
+
+# Testing
+  LoadingParas:
+    checkpoint_path: "bbyrne-nlg/paper-adamw-allmodel/checkpoints/epoch=2-step=61245.ckpt"
+    save_decode: True
+    decode_path: logs/gpt2-schema-adamw-b8/test-AdamW-naive-ep2-s6
+    generate_params:
+      num_beams: 4
+      length_penalty: 0.6
+      max_length: 1500
+      early_stopping: true

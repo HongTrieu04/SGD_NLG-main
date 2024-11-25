@@ -1,0 +1,91 @@
+---
+# Meta Info
+  ModelName: "mlp-prefix-gpt2-SGD"
+  ExpName: &exp_name "mlp-prefix-gpt2-naive-L10"
+  VerName: &ver_name "train-re1"
+  WandbProject: &wandb_project bbyrne-nlg
+  Note: "prefix gpt2 for SGD, using naive SR"
+
+# Tokenizer
+  TokenizerInfo:
+    tokenizer_class: GPT2TokenizerFast
+    tokenizer_name: &tk_name gpt2
+    tokenizer_alias: &tk_alias GPT2TokenizerFast
+
+# LightningModule
+  LightningModuleName: PrefixGPT2GenerationModel
+  LightningModuleParas:
+    model_class: PT_GPT2Model
+    model_path: new
+    optimizer: AdamW
+    optimizer_params:
+      lr: 0.00005
+    prefix_model_name: MLPPrefixModel
+    prefix_length: 10
+    hidden_dims:
+      - 768
+      - 512
+    activation_fn_name: Tanh
+    prefix_dropout: 0
+    
+# LightningDataModule
+  LightningDataModuleName: "GEMSGD_GPT2DataModule"
+  LightningDataModuleParas:
+    batch_size: 8
+    tokenizer_name: *tk_alias
+    force_process: false
+    save_cache: true
+    encode_args:
+      padding: longest
+      truncation: true
+    linearizer_class: SGD_PaperNaiveLinearizer
+    schema_paths:
+      - data/schemas/schema-train.json
+      - data/schemas/schema-test.json
+      - data/schemas/schema-dev.json
+    template_dir: data/utterance_templates
+
+# Training
+  TrainerParas:
+    # accumulate_grad_batches: 32
+    max_epochs: 5
+    val_check_interval: 10000
+  
+  ModelCheckpointParas:
+    monitor: 'val_loss'
+    save_top_k: -1 # -1: save all models 
+
+#Logging
+  TrainLoggerName: WandbLogger
+  TrainLoggerParas:
+    project: *wandb_project
+    name: *exp_name
+    version: *ver_name
+
+  # TrainLoggerName: TensorBoardLogger
+  # TrainLoggerParas:
+  #   name: *exp_name
+  #   version: *ver_name
+
+  TestLoggerName: CSVLogger
+  TestLoggerParas:
+    name: *exp_name
+    version: *ver_name
+
+# Testing
+  LoadingParas:
+    checkpoint_path: "bbyrne-nlg/train-re1/checkpoints/epoch=4-step=102491.ckpt"
+    save_decode: True
+    decode_path: logs/mlp-prefix-gpt2-naive-L10/test-mlp-prefix-gpt2-naive-L10-ep4-s10
+    generate_params:
+      # max_length: 1024 #???? this induces a bug
+      num_beams: 4
+      max_new_tokens: 100
+      length_penalty: 0.6
+      early_stopping: True
+      bos_token_id: 0
+      # num_return_sequences: 4
+      # eos_token_id: 50256 # legacy, previous models without this config will generate slowly
+      # no_repeat_ngram_size: 4
+
+

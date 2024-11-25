@@ -1,0 +1,80 @@
+---
+# Meta Info
+  ModelName: "t5-small-SGD"
+  ExpName: &exp_name "schema-guided"
+  VerName: &ver_name "adamw-train-1"
+  WandbProject: &wandb_project bbyrne-nlg
+  Note: "t5-small for SGD, using schema-guided linearization"
+
+# Tokenizer
+  TokenizerInfo:
+    tokenizer_class: T5TokenizerFast
+    tokenizer_name: &tk_name t5-small
+    tokenizer_alias: &tk_alias T5TokenizerFast
+
+# LightningModule
+  LightningModuleName: "HFGenerationModel"
+  LightningModuleParas:
+    model_path: "t5-small" # assuming root-dir under models/<model_name>
+    optimizer: AdamW
+    optimizer_params:
+      lr: 0.0001
+      # scale_parameter: false
+      # relative_step: false
+      # warmup_init: false
+
+
+# LightningDataModule
+  LightningDataModuleName: "GEMSGD_DataModule"
+  LightningDataModuleParas:
+    batch_size: 8
+    tokenizer_name: *tk_alias
+    force_process: false
+    save_cache: true
+    encode_args:
+      padding: max_length
+      truncation: true
+    linearizer_class: SGD_SchemaGuidedLinearizer
+    schema_paths:
+      - data/schemas/schema-train.json
+      - data/schemas/schema-test.json
+      - data/schemas/schema-dev.json
+    template_dir: data/utterance_templates
+
+# Training
+  TrainerParas:
+    # accumulate_grad_batches: 1
+    max_epochs: 3
+    val_check_interval: 10000
+
+
+  ModelCheckpointParas:
+    monitor: 'val_loss'
+
+#Logging
+  TrainLoggerName: WandbLogger
+  TrainLoggerParas:
+    project: *wandb_project
+    name: *exp_name
+    version: *ver_name
+
+  # TrainLoggerName: TensorBoardLogger
+  # TrainLoggerParas:
+  #   name: *exp_name
+  #   version: *ver_name
+
+  TestLoggerName: CSVLogger
+  TestLoggerParas:
+    name: *exp_name
+    version: *ver_name
+
+# Testing
+  LoadingParas:
+    checkpoint_path: "bbyrne-nlg/adamw-train-1/checkpoints/epoch=2-step=61245.ckpt"
+    save_decode: True
+    decode_path: logs/schema-guided/test-adamw-1/
+    generate_params:
+      num_beams: 4
+      length_penalty: 0.6
+      max_length: 100
+

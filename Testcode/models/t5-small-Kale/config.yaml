@@ -1,0 +1,57 @@
+---
+# Meta Info
+  ModelName: "t5-small-SGD"
+  Note: "T5-small for SGD"
+
+# LightningModule
+  LightningModuleName: "HFT5GenerationModel"
+  LightningModuleParas:
+    model_path: "t5-small" # assuming root-dir under models/<model_name>
+    tokenizer_path: t5-small
+    optimizer: AdamW
+    optimizer_params:
+      lr: 0.0001
+      # scale_parameter: false
+      # relative_step: false
+      # warmup_init: false
+
+# LightningDataModule
+  LightningDataModuleName: "KALESGD_DataModule"
+  LightningDataModuleParas:
+    batch_size: 8
+    tokenizer_path: "t5-small"
+    tokenizer_class: "T5Tokenizer"
+    dataset_path: data/Kale_2020_SGD
+    encode_args:
+      padding: max_length
+      truncation: true
+    linearizer_class: t2g2
+    force_process: false
+    save_cache: True
+
+# Training
+  TrainerParas:
+    accumulate_grad_batches: 1
+    max_epochs: 3
+    val_check_interval: 10000
+    auto_lr_find: False
+  ModelCheckpointParas:
+    monitor: 'val_loss'
+
+# Logging
+  TrainLoggerName: TensorBoardLogger
+  TrainLoggerParas:
+    name: t2g2 
+    version: train-batch8-adamw
+
+  TestLoggerName: CSVLogger
+  TestLoggerParas:
+    name: schema_guided
+    version: test-batch256-adafactor
+
+# Testing
+  LoadingParas:
+    checkpoint_path: "logs/schema_guided/train-batch256/checkpoints/epoch=7-step=5139.ckpt"
+    save_decode: True
+    decode_path: logs/schema_guided/test-batch256
+

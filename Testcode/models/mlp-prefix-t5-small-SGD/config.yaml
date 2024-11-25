@@ -1,0 +1,88 @@
+---
+# Meta Info
+  ModelName: "mlp-prefix-t5-small-SGD"
+  ExpName: &exp_name "mlp-prefix-t5-small-schema-L5"
+  VerName: &ver_name "pt-t5-small-schema-L5-1"
+  WandbProject: &wandb_project bbyrne-nlg
+  Note: "prefix t5-small for SGD, using schema guided SR"
+
+# Tokenizer
+  TokenizerInfo:
+    tokenizer_class: T5TokenizerFast
+    tokenizer_name: &tk_name t5-small
+    tokenizer_alias: &tk_alias T5TokenizerFast
+
+# LightningModule
+  LightningModuleName: PrefixT5GenerationModel
+  LightningModuleParas:
+    model_class: PT_T5Model
+    model_path: new
+    optimizer: AdamW
+    optimizer_params:
+      lr: 0.0001
+    prefix_length: 5
+    hidden_dims:
+      - 512
+      - 384
+    
+# LightningDataModule
+  LightningDataModuleName: "GEMSGD_DataModule"
+  LightningDataModuleParas:
+    batch_size: 8
+    tokenizer_name: *tk_alias
+    force_process: false
+    save_cache: true
+    encode_args:
+      padding: max_length
+      truncation: true
+    linearizer_class: SGD_SchemaGuidedLinearizer
+    schema_paths:
+      - data/schemas/schema-train.json
+      - data/schemas/schema-test.json
+      - data/schemas/schema-dev.json
+    template_dir: data/utterance_templates
+
+# Training
+  TrainerParas:
+    # accumulate_grad_batches: 32
+    max_epochs: 5
+    val_check_interval: 10000
+  
+  ModelCheckpointParas:
+    monitor: 'val_loss'
+
+#Logging
+  TrainLoggerName: WandbLogger
+  TrainLoggerParas:
+    project: *wandb_project
+    name: *exp_name
+    version: *ver_name
+
+  # TrainLoggerName: TensorBoardLogger
+  # TrainLoggerParas:
+  #   name: *exp_name
+  #   version: *ver_name
+
+  TestLoggerName: CSVLogger
+  TestLoggerParas:
+    name: *exp_name
+    version: *ver_name
+
+# Testing
+  LoadingParas:
+    checkpoint_path: "bbyrne-nlg/pt-t5-small-schema-L5-1/checkpoints/epoch=4-step=102491.ckpt"
+    save_decode: True
+    decode_path: logs/mlp-prefix-t5-small-schema-L5/test-pt-t5-schema-L5
+    generate_params:
+      # max_length: 1024 #???? this induces a bug
+      max_new_tokens: 200
+      num_beams: 4
+      length_penalty: 0.6
+      early_stopping: True
+      bos_token_id: 0
+      # bos_token_id: 0
+      # num_return_sequences: 4
+      # eos_token_id: 50256 # legacy, previous models without this config will generate slowly without it
+      # no_repeat_ngram_size: 4
+
+

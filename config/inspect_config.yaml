@@ -1,0 +1,14 @@
+reference_model:
+  model_name: t5-small-SGD
+  exp_name: schema-guided
+  ver_name: train-batch256-adafactor
+  test_name: test-batch256-adafactor+beam+max_length
+  bad_case_by: has_slot_error
+  limit: -1
+
+naive:
+  model_name: t5-small-SGD
+  exp_name: paper-naive
+  ver_name: train-batch256-adafactor
+  test_name: test-batch256-adafactor
+  bad_case_by: has_slot_error

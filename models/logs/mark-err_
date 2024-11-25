@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/content/drive/MyDrive/ColabNotebooks/SGD_NLG-main/mark.py", line 9, in <module>
+    from parent.parent import parent
+ModuleNotFoundError: No module named 'parent'

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# if [[ !python manage_train.py --config_file models/$1/config.yaml ]] 
+# then
+#     echo "Model $1 training setup"
+# else
+#     echo "Model $1 config doesn't exist!"
+# fi
+
+
+if [ $#  -ge 3 ] 
+  then
+    filename=models/$1/logs/$2/$3/test_case.txt 
+    model_name=$1
+    exp_name=$2
+    ver_name=$3
+    wandb_project=$5
+    echo Marking: $filename
+else
+    echo "Supply at least 3 parameters: model, name, version"
+    exit 1
+fi
+
+if [ $4 = "local" ]; then
+    echo "Marking locally"
+    python mark.py --file=$filename --model_name=$model_name --exp_name=$exp_name --ver_name=$ver_name --wandb_project=$wandb_project
+else
+    echo "Marking with sbatch CPU"
+    export filename
+    echo Marking: $filename
+    bash sbatch_mark.sh --export=filename 
+fi
